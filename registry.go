@@ -22,6 +22,9 @@ type (
 		ConnMaxLifetime time.Duration `json:"conn_max_lifetime" mapstructure:"conn_max_lifetime"`
 	}
 
+	// DB is type alias to nap.DB.
+	DB = nap.DB
+
 	// Registry is database connection registry.
 	Registry struct {
 		mux  sync.Mutex
