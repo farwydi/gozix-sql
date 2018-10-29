@@ -95,3 +95,21 @@ func (r *Registry) ConnectionWithName(name string) (_ *nap.DB, err error) {
 
 	return db, nil
 }
+
+// Driver is default connection driver name getter.
+func (r *Registry) Driver() (string, error) {
+	return r.DriverWithName(DEFAULT)
+}
+
+// DriverWithName is driver name getter by name.
+func (r *Registry) DriverWithName(name string) (string, error) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	var value, exists = r.conf[name]
+	if !exists {
+		return "", ErrUnknownConnection
+	}
+
+	return value.Driver, nil
+}
