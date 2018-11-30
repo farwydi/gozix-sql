@@ -1,12 +1,22 @@
 package sql
 
 import (
+	"database/sql"
+
 	"github.com/gozix/viper"
 	"github.com/sarulabs/di"
 )
 
-// Bundle implements the glue.Bundle interface.
-type Bundle struct{}
+type (
+	// Bundle implements the glue.Bundle interface.
+	Bundle struct{}
+
+	// Row is type alias of sql.Row.
+	Row = sql.Row
+
+	// Rows is type alias of sql.Row.
+	Rows = sql.Rows
+)
 
 // BundleName is default definition name.
 const BundleName = "sql"
@@ -23,7 +33,7 @@ func (b *Bundle) Name() string {
 
 // Build implements the glue.Bundle interface.
 func (b *Bundle) Build(builder *di.Builder) error {
-	builder.Add(di.Def{
+	return builder.Add(di.Def{
 		Name: BundleName,
 		Build: func(ctn di.Container) (_ interface{}, err error) {
 			var cfg *viper.Viper
@@ -42,8 +52,6 @@ func (b *Bundle) Build(builder *di.Builder) error {
 			return obj.(*Registry).Close()
 		},
 	})
-
-	return nil
 }
 
 // DependsOn implements the glue.DependsOn interface.
