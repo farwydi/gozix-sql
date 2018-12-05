@@ -2,6 +2,8 @@ package sql
 
 import (
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/gozix/viper"
 	"github.com/sarulabs/di"
@@ -41,9 +43,45 @@ func (b *Bundle) Build(builder *di.Builder) error {
 				return nil, err
 			}
 
-			var conf Config
-			if err = cfg.UnmarshalKey(BundleName, &conf); err != nil {
-				return nil, err
+			// use this is hack, not UnmarshalKey
+			// see https://github.com/spf13/viper/issues/188
+			var (
+				keys = cfg.Sub(BundleName).AllKeys()
+				conf = make(Configs, len(keys))
+			)
+
+			for _, key := range keys {
+				var name = strings.Split(key, ".")[0]
+				if _, ok := conf[name]; ok {
+					continue
+				}
+
+				var (
+					c      Config
+					suffix = fmt.Sprintf("%s.%s.", BundleName, name)
+				)
+
+				if cfg.IsSet(suffix + "nodes") {
+					c.Nodes = cfg.GetStringSlice(suffix + "nodes")
+				}
+
+				if cfg.IsSet(suffix + "driver") {
+					c.Driver = cfg.GetString(suffix + "driver")
+				}
+
+				if cfg.IsSet(suffix + "max_open_conns") {
+					c.MaxOpenConns = cfg.GetInt(suffix + "max_open_conns")
+				}
+
+				if cfg.IsSet(suffix + "max_idle_conns") {
+					c.MaxIdleConns = cfg.GetInt(suffix + "max_idle_conns")
+				}
+
+				if cfg.IsSet(suffix + "conn_max_lifetime") {
+					c.ConnMaxLifetime = cfg.GetDuration(suffix + "conn_max_lifetime")
+				}
+
+				conf[name] = c
 			}
 
 			return NewRegistry(conf), nil
