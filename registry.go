@@ -13,14 +13,17 @@ import (
 const DEFAULT = "default"
 
 type (
-	// Config is registry configuration.
-	Config map[string]struct {
-		Nodes           []string      `json:"nodes" mapstructure:"nodes"`
-		Driver          string        `json:"driver" mapstructure:"driver"`
-		MaxOpenConns    int           `json:"max_open_conns" mapstructure:"max_open_conns"`
-		MaxIdleConns    int           `json:"max_idle_conns" mapstructure:"max_idle_conns"`
-		ConnMaxLifetime time.Duration `json:"conn_max_lifetime" mapstructure:"conn_max_lifetime"`
+	// Config is registry configuration item.
+	Config struct {
+		Nodes           []string      `json:"nodes"`
+		Driver          string        `json:"driver"`
+		MaxOpenConns    int           `json:"max_open_conns"`
+		MaxIdleConns    int           `json:"max_idle_conns"`
+		ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
 	}
+
+	// Configs is registry configurations.
+	Configs map[string]Config
 
 	// DB is type alias to nap.DB.
 	DB = nap.DB
@@ -29,7 +32,7 @@ type (
 	Registry struct {
 		mux  sync.Mutex
 		dbs  map[string]*nap.DB
-		conf Config
+		conf Configs
 	}
 )
 
@@ -39,7 +42,7 @@ var (
 )
 
 // NewRegistry is registry constructor.
-func NewRegistry(conf Config) *Registry {
+func NewRegistry(conf Configs) *Registry {
 	return &Registry{
 		dbs:  make(map[string]*nap.DB, 4),
 		conf: conf,
