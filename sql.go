@@ -40,85 +40,95 @@ func (b *Bundle) Name() string {
 
 // Build implements the glue.Bundle interface.
 func (b *Bundle) Build(builder *di.Builder) error {
-	return builder.Add(di.Def{
-		Name: BundleName,
-		Build: func(ctn di.Container) (_ interface{}, err error) {
-			var cfg *viper.Viper
-			if err = ctn.Fill(viper.BundleName, &cfg); err != nil {
-				return nil, err
-			}
-
-			var promRegistry *prometheus.Registry
-			if err = ctn.Fill(promBundle.DefRegistryName, &promRegistry); err != nil {
-				return nil, err
-			}
-
-			// use this is hack, not UnmarshalKey
-			// see https://github.com/spf13/viper/issues/188
-			var (
-				keys = cfg.Sub(BundleName).AllKeys()
-				conf = make(Configs, len(keys))
-			)
-
-			for _, key := range keys {
-				var name = strings.Split(key, ".")[0]
-				if _, ok := conf[name]; ok {
-					continue
-				}
-
-				var (
-					c      Config
-					suffix = fmt.Sprintf("%s.%s.", BundleName, name)
-				)
-
-				if cfg.IsSet(suffix + "nodes") {
-					c.Nodes = cfg.GetStringSlice(suffix + "nodes")
-				}
-
-				if cfg.IsSet(suffix + "driver") {
-					c.Driver = cfg.GetString(suffix + "driver")
-				}
-
-				if cfg.IsSet(suffix + "max_open_conns") {
-					c.MaxOpenConns = cfg.GetInt(suffix + "max_open_conns")
-				}
-
-				if cfg.IsSet(suffix + "max_idle_conns") {
-					c.MaxIdleConns = cfg.GetInt(suffix + "max_idle_conns")
-				}
-
-				if cfg.IsSet(suffix + "conn_max_lifetime") {
-					c.ConnMaxLifetime = cfg.GetDuration(suffix + "conn_max_lifetime")
-				}
-
-				conf[name] = c
-			}
-			var (
-				registry = NewRegistry(conf)
-				c        prometheus.Collector
-				dbs      *nap.DB
-			)
-			for name, _ := range conf {
-				if dbs, err = registry.ConnectionWithName(name); err != nil {
+	return builder.Add(
+		di.Def{
+			Name: BundleName,
+			Build: func(ctn di.Container) (_ interface{}, err error) {
+				var cfg *viper.Viper
+				if err = ctn.Fill(viper.BundleName, &cfg); err != nil {
 					return nil, err
 				}
 
-				for i, db := range dbs.Databases() {
-					n := fmt.Sprintf("%s_%d", name, i)
-					c = metric.NewPrometheusCollector(n, db)
-					promRegistry.MustRegister(c)
-				}
-			}
+				// use this is hack, not UnmarshalKey
+				// see https://github.com/spf13/viper/issues/188
+				var (
+					keys = cfg.Sub(BundleName).AllKeys()
+					conf = make(Configs, len(keys))
+				)
 
-			return registry, nil
+				for _, key := range keys {
+					var name = strings.Split(key, ".")[0]
+					if _, ok := conf[name]; ok {
+						continue
+					}
+
+					var (
+						c      Config
+						suffix = fmt.Sprintf("%s.%s.", BundleName, name)
+					)
+
+					if cfg.IsSet(suffix + "nodes") {
+						c.Nodes = cfg.GetStringSlice(suffix + "nodes")
+					}
+
+					if cfg.IsSet(suffix + "driver") {
+						c.Driver = cfg.GetString(suffix + "driver")
+					}
+
+					if cfg.IsSet(suffix + "max_open_conns") {
+						c.MaxOpenConns = cfg.GetInt(suffix + "max_open_conns")
+					}
+
+					if cfg.IsSet(suffix + "max_idle_conns") {
+						c.MaxIdleConns = cfg.GetInt(suffix + "max_idle_conns")
+					}
+
+					if cfg.IsSet(suffix + "conn_max_lifetime") {
+						c.ConnMaxLifetime = cfg.GetDuration(suffix + "conn_max_lifetime")
+					}
+
+					conf[name] = c
+				}
+
+				return NewRegistry(conf), nil
+			},
+			Close: func(obj interface{}) error {
+				return obj.(*Registry).Close()
+			},
 		},
-		Close: func(obj interface{}) error {
-			return obj.(*Registry).Close()
+		di.Def{
+			Name: "sql.collectors",
+			Tags: []di.Tag{{
+				Name: promBundle.TagCollectorProvider,
+			}},
+			Build: func(ctn di.Container) (_ interface{}, err error) {
+				var registry *Registry
+				if err = ctn.Fill(BundleName, &registry); err != nil {
+					return nil, err
+				}
+
+				var (
+					cs  []prometheus.Collector
+					dbs *nap.DB
+				)
+				for name, _ := range registry.dbs {
+					if dbs, err = registry.ConnectionWithName(name); err != nil {
+						return nil, err
+					}
+
+					for i, db := range dbs.Databases() {
+						n := fmt.Sprintf("%s_%d", name, i)
+						cs = append(cs, metric.NewPrometheusCollector(n, db))
+					}
+				}
+
+				return cs, nil
+			},
 		},
-	})
+	)
 }
 
 // DependsOn implements the glue.DependsOn interface.
 func (b *Bundle) DependsOn() []string {
-	return []string{"viper", "prometheus"}
+	return []string{"viper"}
 }

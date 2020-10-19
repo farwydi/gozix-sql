@@ -9,3 +9,5 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sarulabs/di/v2 v2.4.0
 )
+
+replace github.com/gozix/prometheus v1.0.0 => github.com/avoykov/prometheus v1.1.1

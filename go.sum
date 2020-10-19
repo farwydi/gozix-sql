@@ -23,6 +23,8 @@ github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hC
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
+github.com/avoykov/prometheus v1.1.1 h1:iQc4+8gi68S7Q02RgefPS+drbC8BKOxK5tgKR9WGeEQ=
+github.com/avoykov/prometheus v1.1.1/go.mod h1:Bba0p/1R0LtidJ5oYbxgOV5EQT1hMyssoL7nshDyMHc=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0 h1:HWo1m869IqiPhD389kmkxeTalrjNbbJTC8LXupb+sl0=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
@@ -99,8 +101,6 @@ github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/ad
 github.com/gozix/glue/v2 v2.1.0/go.mod h1:hooixDFhxISXwKytZUpll9Dni64ht/5QU7H/OU1ecAo=
 github.com/gozix/glue/v2 v2.3.0 h1:EK5CYfDAAhu/omdLm+AmZEU08xJWMVil8xMCaeneI58=
 github.com/gozix/glue/v2 v2.3.0/go.mod h1:mF71/wq1ywiIgqiqQ8dr3xpxll8Hq52EtXDEgumtHzg=
-github.com/gozix/prometheus v1.0.0 h1:EvEBpqnwos746pFrXAYKPAsPNo/c/prOmSQuq4ee7rI=
-github.com/gozix/prometheus v1.0.0/go.mod h1:Bba0p/1R0LtidJ5oYbxgOV5EQT1hMyssoL7nshDyMHc=
 github.com/gozix/viper/v2 v2.1.1 h1:LvkhDRccvd+VTu1+7DhPm+wKQz7YREgaBw2mQxhGBtE=
 github.com/gozix/viper/v2 v2.1.1/go.mod h1:VO2yAo5UoumSd6NM6JF++7RrSjl+jhIwAYPmJbOkvXc=
 github.com/gozix/zap/v2 v2.0.2 h1:3Q4cFDUd88p9E9uZivS9X4+NeVm3gAWhr+JktyxAorg=
