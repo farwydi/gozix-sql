@@ -9,6 +9,8 @@ import (
 	"github.com/gozix/viper/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sarulabs/di/v2"
+
+	"github.com/gozix/sql/v2/internal/metric"
 )
 
 type (
@@ -97,7 +99,7 @@ func (b *Bundle) Build(builder *di.Builder) error {
 			for name, dbs := range registry.dbs {
 				for i, db := range dbs.Databases() {
 					n := fmt.Sprintf("%s_%d", name, i)
-					c = NewPrometheusCollector(n, db)
+					c = metric.NewPrometheusCollector(n, db)
 					promRegistry.MustRegister(c)
 				}
 			}

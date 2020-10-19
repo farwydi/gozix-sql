@@ -1,5 +1,5 @@
-// Package sql - metrics describes prom collector for getting metrics from sql.DB
-package sql
+// Package metric describes prom collector for getting metrics from sql.DB
+package metric
 
 import (
 	"database/sql"
