@@ -7,6 +7,7 @@ import (
 
 	promBundle "github.com/gozix/prometheus"
 	"github.com/gozix/viper/v2"
+	"github.com/iqoption/nap"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sarulabs/di/v2"
 
@@ -95,8 +96,13 @@ func (b *Bundle) Build(builder *di.Builder) error {
 			var (
 				registry = NewRegistry(conf)
 				c        prometheus.Collector
+				dbs      *nap.DB
 			)
-			for name, dbs := range registry.dbs {
+			for name, _ := range conf {
+				if dbs, err = registry.ConnectionWithName(name); err != nil {
+					return nil, err
+				}
+
 				for i, db := range dbs.Databases() {
 					n := fmt.Sprintf("%s_%d", name, i)
 					c = metric.NewPrometheusCollector(n, db)
