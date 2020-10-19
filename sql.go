@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	promBundle "github.com/gozix/prometheus"
 	"github.com/gozix/viper/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sarulabs/di/v2"
 )
 
@@ -40,6 +42,11 @@ func (b *Bundle) Build(builder *di.Builder) error {
 		Build: func(ctn di.Container) (_ interface{}, err error) {
 			var cfg *viper.Viper
 			if err = ctn.Fill(viper.BundleName, &cfg); err != nil {
+				return nil, err
+			}
+
+			var promRegistry *prometheus.Registry
+			if err = ctn.Fill(promBundle.DefRegistryName, &promRegistry); err != nil {
 				return nil, err
 			}
 
@@ -83,8 +90,19 @@ func (b *Bundle) Build(builder *di.Builder) error {
 
 				conf[name] = c
 			}
+			var (
+				registry = NewRegistry(conf)
+				c        prometheus.Collector
+			)
+			for name, dbs := range registry.dbs {
+				for i, db := range dbs.Databases() {
+					n := fmt.Sprintf("%s_%d", name, i)
+					c = NewPrometheusCollector(n, db)
+					promRegistry.MustRegister(c)
+				}
+			}
 
-			return NewRegistry(conf), nil
+			return registry, nil
 		},
 		Close: func(obj interface{}) error {
 			return obj.(*Registry).Close()
@@ -94,5 +112,5 @@ func (b *Bundle) Build(builder *di.Builder) error {
 
 // DependsOn implements the glue.DependsOn interface.
 func (b *Bundle) DependsOn() []string {
-	return []string{"viper"}
+	return []string{"viper", "prometheus"}
 }
