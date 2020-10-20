@@ -111,7 +111,7 @@ func (b *Bundle) Build(builder *di.Builder) error {
 					cs  []prometheus.Collector
 					dbs *nap.DB
 				)
-				for name, _ := range registry.dbs {
+				for name, _ := range registry.Configs() {
 					if dbs, err = registry.ConnectionWithName(name); err != nil {
 						return nil, err
 					}

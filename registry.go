@@ -119,3 +119,8 @@ func (r *Registry) DriverWithName(name string) (string, error) {
 
 	return value.Driver, nil
 }
+
+// Configs is slice of configs getter
+func (r *Registry) Configs() Configs {
+	return r.conf
+}
