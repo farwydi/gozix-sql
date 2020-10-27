@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	promBundle "github.com/gozix/prometheus"
-	"github.com/gozix/viper/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sarulabs/di/v2"
+
+	gzPrometheus "github.com/gozix/prometheus"
+	"github.com/gozix/viper/v2"
 
 	"github.com/gozix/sql/v2/internal/metric"
 )
@@ -98,7 +99,7 @@ func (b *Bundle) Build(builder *di.Builder) error {
 		di.Def{
 			Name: "sql.collectors",
 			Tags: []di.Tag{{
-				Name: promBundle.TagCollectorProvider,
+				Name: gzPrometheus.TagCollectorProvider,
 			}},
 			Build: func(ctn di.Container) (_ interface{}, err error) {
 				var registry *Registry
