@@ -42,11 +42,33 @@ var (
 )
 
 // NewRegistry is registry constructor.
-func NewRegistry(conf Configs) *Registry {
-	return &Registry{
-		dbs:  make(map[string]*nap.DB, 4),
-		conf: conf,
+func NewRegistry(conf Configs) (*Registry, error) {
+	var (
+		dbs = make(map[string]*nap.DB, len(conf))
+		err error
+	)
+
+	for key, value := range conf {
+		var db *nap.DB
+		if db, err = nap.Open(value.Driver, strings.Join(value.Nodes, ";")); err != nil {
+			return nil, err
+		}
+
+		db.SetMaxOpenConns(value.MaxOpenConns)
+		db.SetMaxIdleConns(value.MaxIdleConns)
+		db.SetConnMaxLifetime(value.ConnMaxLifetime)
+
+		if err = db.Ping(); err != nil {
+			return nil, err
+		}
+
+		dbs[key] = db
 	}
+
+	return &Registry{
+		dbs:  dbs,
+		conf: conf,
+	}, nil
 }
 
 // Close is method for close connections.
@@ -75,31 +97,11 @@ func (r *Registry) ConnectionWithName(name string) (_ *nap.DB, err error) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
-	var db, initialized = r.dbs[name]
-	if initialized {
+	if db, ok := r.dbs[name]; ok {
 		return db, nil
 	}
 
-	var value, exists = r.conf[name]
-	if !exists {
-		return nil, ErrUnknownConnection
-	}
-
-	if db, err = nap.Open(value.Driver, strings.Join(value.Nodes, ";")); err != nil {
-		return nil, err
-	}
-
-	db.SetMaxOpenConns(value.MaxOpenConns)
-	db.SetMaxIdleConns(value.MaxIdleConns)
-	db.SetConnMaxLifetime(value.ConnMaxLifetime)
-
-	if err = db.Ping(); err != nil {
-		return nil, err
-	}
-
-	r.dbs[name] = db
-
-	return db, nil
+	return nil, ErrUnknownConnection
 }
 
 // Driver is default connection driver name getter.
@@ -112,10 +114,9 @@ func (r *Registry) DriverWithName(name string) (string, error) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
-	var value, exists = r.conf[name]
-	if !exists {
-		return "", ErrUnknownConnection
+	if value, ok := r.conf[name]; !ok {
+		return value.Driver, nil
 	}
+	return "", ErrUnknownConnection
 
-	return value.Driver, nil
 }
