@@ -114,9 +114,10 @@ func (r *Registry) DriverWithName(name string) (string, error) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
-	if value, ok := r.conf[name]; !ok {
+	if value, ok := r.conf[name]; ok {
 		return value.Driver, nil
 	}
+
 	return "", ErrUnknownConnection
 
 }
