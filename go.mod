@@ -1,6 +1,6 @@
 module github.com/gozix/sql/v2
 
-go 1.12
+go 1.15
 
 require (
 	github.com/gozix/prometheus v1.1.0
