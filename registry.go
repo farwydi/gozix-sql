@@ -15,11 +15,12 @@ const DEFAULT = "default"
 type (
 	// Config is registry configuration item.
 	Config struct {
-		Nodes           []string      `json:"nodes"`
-		Driver          string        `json:"driver"`
-		MaxOpenConns    int           `json:"max_open_conns"`
-		MaxIdleConns    int           `json:"max_idle_conns"`
-		ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
+		Nodes           []string                      `json:"nodes"`
+		Driver          string                        `json:"driver"`
+		MaxOpenConns    int                           `json:"max_open_conns"`
+		MaxIdleConns    int                           `json:"max_idle_conns"`
+		ConnMaxLifetime time.Duration                 `json:"conn_max_lifetime"`
+		AfterOpen       func(name string, db *nap.DB) `json:"-"`
 	}
 
 	// Configs is registry configurations.
@@ -43,30 +44,8 @@ var (
 
 // NewRegistry is registry constructor.
 func NewRegistry(conf Configs) (*Registry, error) {
-	var (
-		dbs = make(map[string]*nap.DB, len(conf))
-		err error
-	)
-
-	for key, value := range conf {
-		var db *nap.DB
-		if db, err = nap.Open(value.Driver, strings.Join(value.Nodes, ";")); err != nil {
-			return nil, err
-		}
-
-		db.SetMaxOpenConns(value.MaxOpenConns)
-		db.SetMaxIdleConns(value.MaxIdleConns)
-		db.SetConnMaxLifetime(value.ConnMaxLifetime)
-
-		if err = db.Ping(); err != nil {
-			return nil, err
-		}
-
-		dbs[key] = db
-	}
-
 	return &Registry{
-		dbs:  dbs,
+		dbs:  make(map[string]*nap.DB),
 		conf: conf,
 	}, nil
 }
@@ -100,8 +79,12 @@ func (r *Registry) ConnectionWithName(name string) (_ *nap.DB, err error) {
 	if db, ok := r.dbs[name]; ok {
 		return db, nil
 	}
+	r.dbs[name], err = r.open(name)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, ErrUnknownConnection
+	return r.dbs[name], nil
 }
 
 // Driver is default connection driver name getter.
@@ -120,4 +103,28 @@ func (r *Registry) DriverWithName(name string) (string, error) {
 
 	return "", ErrUnknownConnection
 
+}
+
+func (r *Registry) open(name string) (db *nap.DB, err error) {
+	var conf, ok = r.conf[name]
+	if !ok {
+		return nil, ErrUnknownConnection
+	}
+	if db, err = nap.Open(conf.Driver, strings.Join(conf.Nodes, ";")); err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(conf.MaxOpenConns)
+	db.SetMaxIdleConns(conf.MaxIdleConns)
+	db.SetConnMaxLifetime(conf.ConnMaxLifetime)
+
+	if err = db.Ping(); err != nil {
+		return nil, err
+	}
+
+	if conf.AfterOpen != nil {
+		conf.AfterOpen(name, db)
+	}
+
+	return db, nil
 }

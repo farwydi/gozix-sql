@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sarulabs/di/v2"
-
 	gzPrometheus "github.com/gozix/prometheus"
 	"github.com/gozix/viper/v2"
+	"github.com/iqoption/nap"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sarulabs/di/v2"
 
 	"github.com/gozix/sql/v2/internal/metric"
 )
@@ -46,6 +46,11 @@ func (b *Bundle) Build(builder *di.Builder) error {
 			Build: func(ctn di.Container) (_ interface{}, err error) {
 				var cfg *viper.Viper
 				if err = ctn.Fill(viper.BundleName, &cfg); err != nil {
+					return nil, err
+				}
+
+				var prometheusRegistry *prometheus.Registry
+				if err = ctn.Fill(gzPrometheus.DefRegistryName, &prometheusRegistry); err != nil {
 					return nil, err
 				}
 
@@ -87,6 +92,14 @@ func (b *Bundle) Build(builder *di.Builder) error {
 						c.ConnMaxLifetime = cfg.GetDuration(suffix + "conn_max_lifetime")
 					}
 
+					//metrics
+					c.AfterOpen = func(name string, db *nap.DB) {
+						for i, dbItem := range db.Databases() {
+							n := fmt.Sprintf("%s_%d", name, i)
+							prometheusRegistry.MustRegister(metric.NewPrometheusCollector(n, dbItem))
+						}
+					}
+
 					conf[name] = c
 				}
 
@@ -94,28 +107,6 @@ func (b *Bundle) Build(builder *di.Builder) error {
 			},
 			Close: func(obj interface{}) error {
 				return obj.(*Registry).Close()
-			},
-		},
-		di.Def{
-			Name: "sql.collectors",
-			Tags: []di.Tag{{
-				Name: gzPrometheus.TagCollectorProvider,
-			}},
-			Build: func(ctn di.Container) (_ interface{}, err error) {
-				var registry *Registry
-				if err = ctn.Fill(BundleName, &registry); err != nil {
-					return nil, err
-				}
-
-				var cs []prometheus.Collector
-				for name, db := range registry.dbs {
-					for i, db := range db.Databases() {
-						n := fmt.Sprintf("%s_%d", name, i)
-						cs = append(cs, metric.NewPrometheusCollector(n, db))
-					}
-				}
-
-				return cs, nil
 			},
 		},
 	)
