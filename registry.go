@@ -105,8 +105,7 @@ func (r *Registry) DriverWithName(name string) (string, error) {
 
 }
 
-func (r *Registry) open(name string) (_ *nap.DB, err error) {
-	var db *nap.DB
+func (r *Registry) open(name string) (db *nap.DB, err error) {
 	var conf, ok = r.conf[name]
 	if !ok {
 		return nil, ErrUnknownConnection

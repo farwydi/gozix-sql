@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iqoption/nap"
-
 	gzPrometheus "github.com/gozix/prometheus"
 	"github.com/gozix/viper/v2"
+	"github.com/iqoption/nap"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sarulabs/di/v2"
 
@@ -95,12 +94,10 @@ func (b *Bundle) Build(builder *di.Builder) error {
 
 					//metrics
 					c.Metric = func(name string, db *nap.DB) {
-						var cs []prometheus.Collector
 						for i, dbItem := range db.Databases() {
 							n := fmt.Sprintf("%s_%d", name, i)
-							cs = append(cs, metric.NewPrometheusCollector(n, dbItem))
+							prometheusRegistry.MustRegister(metric.NewPrometheusCollector(n, dbItem))
 						}
-						prometheusRegistry.MustRegister(cs...)
 					}
 
 					conf[name] = c
