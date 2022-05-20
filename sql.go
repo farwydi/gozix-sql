@@ -93,7 +93,7 @@ func (b *Bundle) Build(builder *di.Builder) error {
 					}
 
 					//metrics
-					c.Metric = func(name string, db *nap.DB) {
+					c.AfterOpen = func(name string, db *nap.DB) {
 						for i, dbItem := range db.Databases() {
 							n := fmt.Sprintf("%s_%d", name, i)
 							prometheusRegistry.MustRegister(metric.NewPrometheusCollector(n, dbItem))

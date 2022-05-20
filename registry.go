@@ -20,7 +20,7 @@ type (
 		MaxOpenConns    int                           `json:"max_open_conns"`
 		MaxIdleConns    int                           `json:"max_idle_conns"`
 		ConnMaxLifetime time.Duration                 `json:"conn_max_lifetime"`
-		Metric          func(name string, db *nap.DB) `json:"-"`
+		AfterOpen       func(name string, db *nap.DB) `json:"-"`
 	}
 
 	// Configs is registry configurations.
@@ -122,8 +122,8 @@ func (r *Registry) open(name string) (db *nap.DB, err error) {
 		return nil, err
 	}
 
-	if conf.Metric != nil {
-		conf.Metric(name, db)
+	if conf.AfterOpen != nil {
+		conf.AfterOpen(name, db)
 	}
 
 	return db, nil
