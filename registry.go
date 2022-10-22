@@ -1,3 +1,7 @@
+// Copyright 2018 Sergey Novichkov. All rights reserved.
+// For the full copyright and license information, please view the LICENSE
+// file that was distributed with this source code.
+
 package sql
 
 import (
@@ -23,11 +27,8 @@ type (
 		AfterOpen       func(name string, db *nap.DB) `json:"-"`
 	}
 
-	// Configs is registry configurations.
+	// Configs are registry configurations.
 	Configs map[string]Config
-
-	// DB is type alias to nap.DB.
-	DB = nap.DB
 
 	// Registry is database connection registry.
 	Registry struct {
@@ -79,10 +80,13 @@ func (r *Registry) ConnectionWithName(name string) (_ *nap.DB, err error) {
 	if db, ok := r.dbs[name]; ok {
 		return db, nil
 	}
-	r.dbs[name], err = r.open(name)
-	if err != nil {
+
+	var db *nap.DB
+	if db, err = r.open(name); err != nil {
 		return nil, err
 	}
+
+	r.dbs[name] = db
 
 	return r.dbs[name], nil
 }
