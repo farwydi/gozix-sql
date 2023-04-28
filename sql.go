@@ -10,11 +10,15 @@ import (
 
 	"github.com/gozix/di"
 	"github.com/gozix/glue/v3"
+	gzOTEL "github.com/gozix/otel"
 	gzViper "github.com/gozix/viper/v3"
 
+	"github.com/XSAM/otelsql"
 	"github.com/iqoption/nap"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Bundle implements the glue.Bundle interface.
@@ -43,10 +47,15 @@ func (b *Bundle) Build(builder di.Builder) error {
 func (b *Bundle) DependsOn() []string {
 	return []string{
 		gzViper.BundleName,
+		gzOTEL.BundleName,
 	}
 }
 
-func (b *Bundle) provideRegistry(cfg *viper.Viper, registry *prometheus.Registry) (_ *Registry, _ func() error, err error) {
+func (b *Bundle) provideRegistry(
+	cfg *viper.Viper,
+	registry *prometheus.Registry,
+	tracerProvider trace.TracerProvider,
+) (_ *Registry, _ func() error, err error) {
 	// use this is hack, not UnmarshalKey
 	// see https://github.com/spf13/viper/issues/188
 	var (
@@ -91,6 +100,14 @@ func (b *Bundle) provideRegistry(cfg *viper.Viper, registry *prometheus.Registry
 				registry.MustRegister(
 					newPrometheusCollector(n, dbItem),
 				)
+
+				err = otelsql.RegisterDBStatsMetrics(dbItem,
+					otelsql.WithTracerProvider(tracerProvider),
+					otelsql.WithAttributes(attribute.String("name", n)),
+				)
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 
